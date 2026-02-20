@@ -64,11 +64,13 @@ loginForm.addEventListener('submit', async (e) => {
             await showApp(user);
             showToast(`Bem-vindo, ${user.nome}!`);
         } else {
+            loginError.textContent = 'Usuário ou senha incorretos.';
             loginError.classList.add('show');
         }
     } catch (err) {
-        loginError.classList.add('show');
         console.error('Login error:', err);
+        loginError.textContent = 'Erro de conexão. Verifique a internet.';
+        loginError.classList.add('show');
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Entrar';
