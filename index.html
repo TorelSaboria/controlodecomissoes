@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="HotelCom – Sistema de Controle de Comissões para Hotel. Gestão financeira de comissões sobre serviços vendidos a hóspedes." />
+  <title>HotelCom – Controle de Comissões</title>
+  <link rel="stylesheet" href="src/css/global.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+
+  <!-- ===== LOGIN SCREEN ===== -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-card">
+      <div class="logo">
+        <h1>Hotel<span>Com</span></h1>
+        <p>Sistema de Controle de Comissões</p>
+      </div>
+      <div id="login-error" class="login-error">Usuário ou senha incorretos.</div>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="login-user">Usuário</label>
+          <input type="text" id="login-user" class="form-control" placeholder="Digite seu usuário" required
+            autocomplete="username" />
+        </div>
+        <div class="form-group">
+          <label for="login-pass">Senha</label>
+          <input type="password" id="login-pass" class="form-control" placeholder="Digite sua senha" required
+            autocomplete="current-password" />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;padding:12px;">Entrar</button>
+      </form>
+      <p style="text-align:center;margin-top:16px;font-size:0.75rem;color:var(--color-text-muted);">
+        Demo: admin / admin123 &nbsp;|&nbsp; operador / op123
+      </p>
+    </div>
+  </div>
+
+  <!-- ===== APP LAYOUT ===== -->
+  <div id="app-layout" class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h1>Hotel<span>Com</span></h1>
+        <p>Controle de Comissões</p>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Menu</div>
+          <a class="nav-item active" data-page="dashboard">
+            <span class="nav-icon">📊</span> Dashboard
+          </a>
+          <a class="nav-item" data-page="sales">
+            <span class="nav-icon">💰</span> Vendas
+          </a>
+          <a class="nav-item" data-page="new-sale">
+            <span class="nav-icon">➕</span> Nova Venda
+          </a>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Sistema</div>
+          <a class="nav-item" data-page="settings">
+            <span class="nav-icon">⚙️</span> Configurações
+          </a>
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="user-avatar">A</div>
+          <div class="user-details">
+            <div class="user-name" id="user-name">Admin</div>
+            <div class="user-role" id="user-role">Administrador</div>
+          </div>
+        </div>
+        <button class="btn-logout" id="btn-logout">Sair do Sistema</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- ===== DASHBOARD PAGE ===== -->
+      <div id="page-dashboard" class="page active">
+        <div class="page-header">
+          <div>
+            <h2>Dashboard</h2>
+            <p>Visão geral financeira do hotel</p>
+          </div>
+        </div>
+        <div class="cards-grid" id="dashboard-cards"></div>
+        <div class="charts-grid">
+          <div class="chart-container">
+            <h3>📊 Comissões por Fornecedor</h3>
+            <canvas id="chart-suppliers"></canvas>
+          </div>
+          <div class="chart-container">
+            <h3>📈 Vendas por Período</h3>
+            <canvas id="chart-sales-time"></canvas>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-header">
+            <h3>🔹 Serviços do Dia</h3>
+          </div>
+          <div class="section-body">
+            <div class="table-wrapper" id="today-services-table"></div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-header">
+            <h3>🔔 Alertas de Cobrança</h3>
+          </div>
+          <div class="section-body" id="billing-alerts"></div>
+        </div>
+      </div>
+
+      <!-- ===== SALES PAGE ===== -->
+      <div id="page-sales" class="page">
+        <div class="page-header">
+          <div>
+            <h2>Vendas</h2>
+            <p>Gerencie todas as vendas e comissões</p>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-secondary" id="btn-export-csv">📥 Exportar CSV</button>
+            <button class="btn btn-primary" id="btn-goto-new-sale">➕ Nova Venda</button>
+          </div>
+        </div>
+        <div class="filters-bar" id="sales-filters">
+          <div class="filter-group">
+            <label>Buscar hóspede</label>
+            <input type="text" class="form-control" id="filter-guest" placeholder="Nome do hóspede..." />
+          </div>
+          <div class="filter-group">
+            <label>Fornecedor</label>
+            <select class="form-control" id="filter-supplier">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Serviço</label>
+            <select class="form-control" id="filter-service-type">
+              <option value="">Todos</option>
+              <option value="Transfer">Transfer</option>
+              <option value="Passeio">Passeio</option>
+              <option value="Restaurante">Restaurante</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Status</label>
+            <select class="form-control" id="filter-status">
+              <option value="">Todos</option>
+              <option value="pendente">Pendente</option>
+              <option value="pago">Pago</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Data inicial</label>
+            <input type="date" class="form-control" id="filter-date-start" />
+          </div>
+          <div class="filter-group">
+            <label>Data final</label>
+            <input type="date" class="form-control" id="filter-date-end" />
+          </div>
+          <div class="filter-group">
+            <label>Filtros rápidos</label>
+            <div class="quick-filters">
+              <button class="quick-filter-btn" data-quick="today">Hoje</button>
+              <button class="quick-filter-btn" data-quick="week">Semana</button>
+              <button class="quick-filter-btn" data-quick="month">Mês</button>
+              <button class="quick-filter-btn" data-quick="all">Todos</button>
+            </div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-body">
+            <div class="table-wrapper" id="sales-table"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== NEW SALE PAGE ===== -->
+      <div id="page-new-sale" class="page">
+        <div class="page-header">
+          <div>
+            <h2 id="sale-form-title">Nova Venda</h2>
+            <p>Registrar novo serviço vendido ao hóspede</p>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-body">
+            <form id="sale-form">
+              <input type="hidden" id="sale-id" />
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="sale-guest">Nome do Hóspede <span class="required">*</span></label>
+                  <input type="text" id="sale-guest" class="form-control" placeholder="Nome completo" required />
+                </div>
+                <div class="form-group">
+                  <label for="sale-room">Quarto</label>
+                  <input type="text" id="sale-room" class="form-control" placeholder="Ex: 201" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="sale-service">Serviço <span class="required">*</span></label>
+                  <select id="sale-service" class="form-control" required>
+                    <option value="">Selecione um serviço</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="sale-supplier">Fornecedor</label>
+                  <input type="text" id="sale-supplier" class="form-control form-readonly" readonly />
+                  <input type="hidden" id="sale-supplier-id" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="sale-date">Data do Serviço <span class="required">*</span></label>
+                  <input type="date" id="sale-date" class="form-control" required />
+                </div>
+                <div class="form-group">
+                  <label for="sale-value">Valor Total da Venda (€) <span class="required">*</span></label>
+                  <input type="number" id="sale-value" class="form-control" placeholder="0.00" step="0.01" min="0"
+                    required />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Tipo de Comissão</label>
+                  <input type="text" id="sale-commission-type" class="form-control form-readonly" readonly />
+                </div>
+                <div class="form-group">
+                  <label>Comissão Gerada (€)</label>
+                  <input type="text" id="sale-commission" class="form-control form-readonly" readonly />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="sale-observations">Observações</label>
+                <textarea id="sale-observations" class="form-control" placeholder="Notas adicionais..."></textarea>
+              </div>
+              <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary" id="btn-cancel-sale">Cancelar</button>
+                <button type="submit" class="btn btn-primary">💾 Salvar Venda</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SETTINGS PAGE ===== -->
+      <div id="page-settings" class="page">
+        <div class="page-header">
+          <div>
+            <h2>Configurações</h2>
+            <p>Gerenciar fornecedores e serviços</p>
+          </div>
+        </div>
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="suppliers">📌 Fornecedores</button>
+          <button class="tab-btn" data-tab="services">📌 Serviços</button>
+        </div>
+        <div id="tab-suppliers" class="tab-content active">
+          <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+            <button class="btn btn-primary" id="btn-add-supplier">➕ Novo Fornecedor</button>
+          </div>
+          <div class="section">
+            <div class="section-body">
+              <div class="table-wrapper" id="suppliers-table"></div>
+            </div>
+          </div>
+        </div>
+        <div id="tab-services" class="tab-content">
+          <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+            <button class="btn btn-primary" id="btn-add-service">➕ Novo Serviço</button>
+          </div>
+          <div class="section">
+            <div class="section-body">
+              <div class="table-wrapper" id="services-table"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <button class="mobile-menu-toggle" id="mobile-menu-toggle">☰</button>
+  </div>
+
+  <!-- ===== MODALS ===== -->
+  <div class="modal-overlay" id="modal-supplier">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-supplier-title">Novo Fornecedor</h3>
+        <button class="btn-icon"
+          onclick="document.getElementById('modal-supplier').classList.remove('active')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="supplier-form">
+          <input type="hidden" id="supplier-id" />
+          <div class="form-group">
+            <label for="supplier-name">Nome <span class="required">*</span></label>
+            <input type="text" id="supplier-name" class="form-control" placeholder="Nome do fornecedor" required />
+          </div>
+          <div class="form-group">
+            <label for="supplier-phone">Telefone</label>
+            <input type="text" id="supplier-phone" class="form-control" placeholder="+351 xxx xxx xxx" />
+          </div>
+          <div class="form-group">
+            <label for="supplier-billing-day">Dia de Cobrança (1–31) <span class="required">*</span></label>
+            <input type="number" id="supplier-billing-day" class="form-control" min="1" max="31" placeholder="15"
+              required />
+          </div>
+          <div class="form-group" style="display:flex;align-items:center;gap:12px;">
+            <label style="margin-bottom:0;">Ativo</label>
+            <label class="toggle">
+              <input type="checkbox" id="supplier-active" checked />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary"
+          onclick="document.getElementById('modal-supplier').classList.remove('active')">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-supplier">💾 Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-service">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-service-title">Novo Serviço</h3>
+        <button class="btn-icon"
+          onclick="document.getElementById('modal-service').classList.remove('active')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="service-form">
+          <input type="hidden" id="service-id" />
+          <div class="form-group">
+            <label for="service-name">Nome do Serviço <span class="required">*</span></label>
+            <input type="text" id="service-name" class="form-control" placeholder="Ex: Transfer Aeroporto" required />
+          </div>
+          <div class="form-group">
+            <label for="service-type">Tipo de Serviço <span class="required">*</span></label>
+            <select id="service-type" class="form-control" required>
+              <option value="">Selecione</option>
+              <option value="Transfer">Transfer</option>
+              <option value="Passeio">Passeio</option>
+              <option value="Restaurante">Restaurante</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="service-supplier">Fornecedor <span class="required">*</span></label>
+            <select id="service-supplier" class="form-control" required>
+              <option value="">Selecione</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="service-commission-type">Tipo de Comissão <span class="required">*</span></label>
+              <select id="service-commission-type" class="form-control" required>
+                <option value="">Selecione</option>
+                <option value="fixa">Fixa (€)</option>
+                <option value="percentual">Percentual (%)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="service-commission-value">Valor da Comissão <span class="required">*</span></label>
+              <input type="number" id="service-commission-value" class="form-control" step="0.01" min="0"
+                placeholder="0.00" required />
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary"
+          onclick="document.getElementById('modal-service').classList.remove('active')">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-service">💾 Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-confirm">
+    <div class="modal" style="max-width:400px;">
+      <div class="modal-header">
+        <h3>Confirmar Exclusão</h3>
+        <button class="btn-icon"
+          onclick="document.getElementById('modal-confirm').classList.remove('active')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirm-message" style="color:var(--color-text-secondary);font-size:0.9rem;">Tem certeza que deseja
+          excluir este item?</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary"
+          onclick="document.getElementById('modal-confirm').classList.remove('active')">Cancelar</button>
+        <button class="btn btn-danger" id="btn-confirm-delete">🗑️ Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script type="module" src="src/js/main.js"></script>
+</body>
+
+</html>
