@@ -1,11 +1,13 @@
 // ===== DATA STORE =====
 // Supabase-backed store — replaces localStorage completely
-// Uses the global `supabase` object from CDN
+// Uses @supabase/supabase-js via npm
 
-const SUPABASE_URL = 'https://doetufjrfxkoxjcnsdfb.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvZXR1ZmpyZnhrb3hqY25zZGZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNTA0NTUsImV4cCI6MjA4NjkyNjQ1NX0.RMR02hWJtSMP71DJwzfhiJct--3qHG4sdRCIWpkNmcY';
+import { createClient } from '@supabase/supabase-js';
 
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Event system for reactivity (same interface)
 const listeners = {};
